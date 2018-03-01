@@ -72,7 +72,7 @@ std::vector<std::vector<double> > share_prices_of_contiguous_tickers(
   
   // Open file financial_data.txt
   std::ifstream inFile;
-  inFile.open("financial_data_clean_shorter.txt");
+  inFile.open("financial_data_clean_03_17.txt");
 
   // Create vector of vector of doubles
   std::vector<std::vector<double> > *share_prices_of_contiguous = 
@@ -126,10 +126,10 @@ std::vector<std::vector<double> > to_percentage_change(int delta_time,
 
   // initialize vector of vector
   percentage_change->resize(tickers.size());
-  std::vector<double> temp;
-  for (int i = 0; i < tickers.size(); i++) {
-    percentage_change[i].reserve(1000);
-  }
+
+//  for (int i = 0; i < tickers.size(); i++) {
+//    percentage_change[i].reserve(1000);
+//  }
   std::cout << "Made v of v %\n";
   std::cout << "Tickers Size: " << tickers.size() << std::endl;
   std::cout << "Share_prices[2] Size: " << share_prices[2].size() << std::endl;
@@ -172,14 +172,27 @@ void print_to_kmeans(std::vector<std::string> tickers,
 //    for (int j = 0; j < 10; j++)
 //      values_to_print[i].push_back(j);
 
+  int max = 0;
+
+  for (int i = 0; i < tickers.size(); i++)
+    if (values_to_print[i].size() > max) max = values_to_print[i].size();
+
   for (int i = 0; i < tickers.size(); i++) {
-    for (std::vector<double>::size_type j = 0; 
-        j < values_to_print[i].size(); j++) {
-      outFile << values_to_print[i][j] << " ";
+    if (values_to_print[i].size() == max) {
+      data_points++;
+      for (std::vector<double>::size_type j = 0; 
+          j < values_to_print[i].size(); j++) {
+        outFile << values_to_print[i][j] << " ";
+      }
+      outFile << tickers[i] << "\n";
     }
-    outFile << tickers[i] << std::endl;
   }
   outFile.close();
+
+  std::cout << "Data Points: " << data_points << std::endl;
+  std::cout << "Attributes: " << max << std::endl;
+  std::cout << "Clusters: ?\n";
+  std::cout << "Name: 1\n";
 }
 
 extern void preprocess_data(std::vector<std::string> contiguous_tickers);
@@ -187,29 +200,30 @@ extern void preprocess_data(std::vector<std::string> contiguous_tickers);
 int main() {
   // The following are the overlapping tickers between 1977 and 2017, note that
   // the overlaop() function may replace the below array.
-  const char *vec_init[] = {"AAA", "AAD", "AAR", "ABA", "ABC", "ABR", "ABT",
-    "ADH", "ADN", "ADX", "AFI", "AGL", "AGR", "AGS", "AHX", "ALK", "ALL",
-    "AMC", "AMG", "AML", "ANL", "ANZ", "AOF", "AOG", "ARA", "ARB", "ARF",
-    "ARG", "ARL", "ASL", "AST", "ATP", "AVG", "BAH", "BEN", "BHP", "BKW",
-    "BMT", "BOA", "BOC", "BPT", "BRL", "BRN", "CAA", "CAG", "CAR", "CBA",
-    "CBL", "CCL", "CGL", "CGN", "CIM", "CIP", "CMC", "CNW", "COG", "COH",
-    "CRO", "CSL", "CSR", "CTO", "CTX", "CUE", "CVC", "CVN", "CWP", "DEV",
-    "DFM", "DJW", "DRA", "DUI", "EGD", "EGL", "ELT", "EML", "EMP", "EQT", 
-    "ERA", "ESE", "ESI", "FAR", "FGR", "FIG", "FLT", "FOR", "FXJ", "GBG", 
-    "GFY", "GMA", "GME", "GMN", "GPT", "GUD", "GUL", "HAR", "HGO", "HIL", 
-    "HLX", "HVN", "IAM", "ICT", "IFT", "IMD", "ING", "IPH", "IRC", "JRV", 
-    "KCN", "KGM", "KMT", "LKO", "LLC", "MAH", "MAT", "MAY", "MBK", "MCP",
-    "MDI", "MED", "MGC", "MGG", "MGL", "MLT", "MPL", "MRC", "MRV", "MTM",
-    "NAB", "NCM", "NCR", "NML", "NOR", "NTL", "OEC", "OML", "OSH", "PMC",
-    "PMP", "PNI", "POW", "PPK", "PPT", "PRL", "PSA", "QAN", "QBE", "RAC",
-    "RBL", "RCT", "REH", "RGS", "RIC", "RSG", "SAS", "SBM", "SCP", "SDG",
-    "SDI", "SGP", "SGR", "SHL", "SHV", "SMC", "SMI", "SMM", "SPX", "SRI",
-    "SRO", "STA", "STM", "STO", "SUR", "SYD", "TAH", "TAP", "TCL", "TGG",
-    "TRY", "VLT", "VRL", "WBA", "WBC", "WES", "WHF", "WMC", "WMI", "WOW",
-    "WPL", "WTP", "ZEL"};
+//  const char *vec_init[] = {"AAA", "AAD", "AAR", "ABA", "ABC", "ABR", "ABT",
+//    "ADH", "ADN", "ADX", "AFI", "AGL", "AGR", "AGS", "AHX", "ALK", "ALL",
+//    "AMC", "AMG", "AML", "ANL", "ANZ", "AOF", "AOG", "ARA", "ARB", "ARF",
+//    "ARG", "ARL", "ASL", "AST", "ATP", "AVG", "BAH", "BEN", "BHP", "BKW",
+//    "BMT", "BOA", "BOC", "BPT", "BRL", "BRN", "CAA", "CAG", "CAR", "CBA",
+//    "CBL", "CCL", "CGL", "CGN", "CIM", "CIP", "CMC", "CNW", "COG", "COH",
+//    "CRO", "CSL", "CSR", "CTO", "CTX", "CUE", "CVC", "CVN", "CWP", "DEV",
+//    "DFM", "DJW", "DRA", "DUI", "EGD", "EGL", "ELT", "EML", "EMP", "EQT", 
+//    "ERA", "ESE", "ESI", "FAR", "FGR", "FIG", "FLT", "FOR", "FXJ", "GBG", 
+//    "GFY", "GMA", "GME", "GMN", "GPT", "GUD", "GUL", "HAR", "HGO", "HIL", 
+//    "HLX", "HVN", "IAM", "ICT", "IFT", "IMD", "ING", "IPH", "IRC", "JRV", 
+//    "KCN", "KGM", "KMT", "LKO", "LLC", "MAH", "MAT", "MAY", "MBK", "MCP",
+//    "MDI", "MED", "MGC", "MGG", "MGL", "MLT", "MPL", "MRC", "MRV", "MTM",
+//    "NAB", "NCM", "NCR", "NML", "NOR", "NTL", "OEC", "OML", "OSH", "PMC",
+//    "PMP", "PNI", "POW", "PPK", "PPT", "PRL", "PSA", "QAN", "QBE", "RAC",
+//    "RBL", "RCT", "REH", "RGS", "RIC", "RSG", "SAS", "SBM", "SCP", "SDG",
+//    "SDI", "SGP", "SGR", "SHL", "SHV", "SMC", "SMI", "SMM", "SPX", "SRI",
+//    "SRO", "STA", "STM", "STO", "SUR", "SYD", "TAH", "TAP", "TCL", "TGG",
+//    "TRY", "VLT", "VRL", "WBA", "WBC", "WES", "WHF", "WMC", "WMI", "WOW",
+//    "WPL", "WTP", "ZEL"};
 
-  std::vector<std::string> overlap(vec_init, vec_init+190);
-  
+//  std::vector<std::string> overlap(vec_init, vec_init+190);
+  std::vector<std::string> overlap;
+  overlap = overlappingTickers();
   std::cout << "\t\t --- Overlapped Tickers --- " << std::endl;
 
   for (int i = 0; i < overlap.size(); i++)
@@ -217,7 +231,7 @@ int main() {
   std::cout << "Size of overlapped tickers: " << overlap.size() << std::endl;
   
   // to preprocess financial_data.txt uncomment below line 
-//  preprocess_data(overlap);
+  preprocess_data(overlap);
 
   // temp share prices vector
   std::vector<std::vector<double> > share_prices;
@@ -233,12 +247,11 @@ int main() {
   }
   
   std::vector<std::vector<double> > percentage_qrtly;
-  int delta = 5;  
+  int delta = 30;  
   percentage_qrtly = to_percentage_change(delta, overlap, share_prices);
+  std::cout << "percentage size: " << percentage_qrtly[1].size() << std::endl;
   print_to_kmeans(overlap, percentage_qrtly);
+  std::cout << "Delta Time: " << delta;
 
   return 0;
 }
-// Next step: concatenate all txt files, then remove commas w/ atom, then 
-// turn into vectors of each price, then convert into vectors of each 
-// daily / monthly / year change in price then make  K-means compatible data
