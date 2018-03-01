@@ -2,6 +2,7 @@
 #include <vector>
 #include <string>
 #include <fstream>
+#include <algorithm>
 
 std::vector<std::string> overlappingTickers() {
   std::vector<std::string> tickers_1997;
@@ -54,20 +55,34 @@ std::vector<std::string> overlappingTickers() {
   return tickers_overlap;
 }
 
+template<class Iter, class T>
+Iter binary_find(Iter begin, Iter end, T val)
+{
+    // Finds the lower bound in at most log(last - first) + 1 comparisons
+    Iter i = std::lower_bound(begin, end, val);
+
+    if (i != end && !(val < *i))
+        return i; // found
+    else
+        return end; // not found
+}
+
 std::vector<std::vector<double> > share_prices_of_contiguous_tickers(
     std::vector<std::string> contiguous_tickers) {
   
   // Open file financial_data.txt
   std::ifstream inFile;
-  inFile.open("financial_data.txt");
+  inFile.open("financial_data_clean_shorter.txt");
 
   // Create vector of vector of doubles
-  std::vector<std::vector<double> > share_prices_of_contiguous;
+  std::vector<std::vector<double> > *share_prices_of_contiguous = 
+    new std::vector<std::vector<double> >;
   std::vector<double> temp_vec;
+  share_prices_of_contiguous->resize(contiguous_tickers.size());
 
   for (int i = 0; i < contiguous_tickers.size(); i++) {
-    share_prices_of_contiguous.push_back(temp_vec);
-    share_prices_of_contiguous[i].reserve(1000);
+ //   share_prices_of_contiguous.push_back(temp_vec);
+    share_prices_of_contiguous->at(i).reserve(1000);
   }
 
   // For each line in fin...txt, if the ticker in contiguous tickers, push the
@@ -75,51 +90,44 @@ std::vector<std::vector<double> > share_prices_of_contiguous_tickers(
   // at the same index
   std::string x;
   int index_of_line = 0;
-  bool contiguous_ticker = false;
   int index_of_ticker = 0;
 
   while (inFile >> x) {
     // If index == 0, see if x in contiguous_tickers, set index_of_ticker
     if (index_of_line == 0) {
-      while (index_of_ticker < contiguous_tickers.size()) {
-        // If true, set flag to true
-        if (contiguous_tickers[index_of_ticker] == x) {
-          contiguous_ticker = true;
-          std::cout << "Found ticker" << std::endl;
-          break;
-        }
-        index_of_ticker++;
-      }
+      index_of_ticker = std::distance(contiguous_tickers.begin(), 
+          binary_find(contiguous_tickers.begin(),
+          contiguous_tickers.end(), x));
+      std::cout << "Ticker index:      ------- :" << index_of_ticker << "\n";
+      index_of_line = 1;
     }
-    // ElIf index == 5 && flag, push onto share_prices_vec at index_of_ticker
-    else if ((index_of_line == 5) && (contiguous_ticker)) {
-      share_prices_of_contiguous[index_of_ticker].push_back(std::stod (x));
+    // ElIf index == 1 push onto share_prices_vec at index_of_ticker
+    else if (index_of_line == 1) {
+      share_prices_of_contiguous->at(index_of_ticker).push_back(std::stod (x));
+//      std::cout << "Reset and pushed ticker index/price: " << 
+//        share_prices_of_contiguous->at(index_of_ticker).back() << std::endl;
       index_of_ticker = 0;
-      contiguous_ticker = false;
-      std::cout << "Reset and pushed ticker index/price" << std::endl;
+      index_of_line = 0;
     }
-    // If index == 6, index = 0, else index++
-    if (index_of_line == 6) index_of_line = 0;
-    else index_of_line++;
-    std::cout << "Reached end of loop with index: " << index_of_line;
-    std::cout << std::endl;
-    std::cout << "x: " << x << std::endl;
+//    std::cout << x << std::endl;
   }
   // return vector of vector
-  return share_prices_of_contiguous;
+  return *share_prices_of_contiguous;
 }
 
 std::vector<std::vector<double> > to_percentage_change(int delta_time,
     std::vector<std::string> tickers, 
     std::vector<std::vector<double> > share_prices) {
   // create a new vector of doubles
-  std::vector<std::vector<double> > percentage_change;
+  std::vector<std::vector<double> > *percentage_change = new 
+    std::vector<std::vector<double> >;
+
   std::cout << "Made percentage\n";
 
   // initialize vector of vector
+  percentage_change->resize(tickers.size());
   std::vector<double> temp;
   for (int i = 0; i < tickers.size(); i++) {
-    percentage_change.push_back(temp);
     percentage_change[i].reserve(1000);
   }
   std::cout << "Made v of v %\n";
@@ -138,7 +146,7 @@ std::vector<std::vector<double> > to_percentage_change(int delta_time,
       if (j+delta_time < share_prices[i].size()) {
       percentage_delta = (share_prices[i][j] + share_prices[i][j+delta_time]) /
         share_prices[i][j];
-      percentage_change[i].push_back(percentage_delta);
+      percentage_change->at(i).push_back(percentage_delta);
       }
 //      std::cout << "i and j: " << i << " " << j << std::endl;
     }
@@ -146,7 +154,7 @@ std::vector<std::vector<double> > to_percentage_change(int delta_time,
   std::cout << "Out v double loop\n";
   
   // return vector of vector
-  return percentage_change;
+  return *percentage_change;
 }
 
 void print_to_kmeans(std::vector<std::string> tickers,
@@ -174,24 +182,58 @@ void print_to_kmeans(std::vector<std::string> tickers,
   outFile.close();
 }
 
-int main() {
-  std::vector<std::string> overlap;
+extern void preprocess_data(std::vector<std::string> contiguous_tickers);
 
-  overlap = overlappingTickers();
+int main() {
+  // The following are the overlapping tickers between 1977 and 2017, note that
+  // the overlaop() function may replace the below array.
+  const char *vec_init[] = {"AAA", "AAD", "AAR", "ABA", "ABC", "ABR", "ABT",
+    "ADH", "ADN", "ADX", "AFI", "AGL", "AGR", "AGS", "AHX", "ALK", "ALL",
+    "AMC", "AMG", "AML", "ANL", "ANZ", "AOF", "AOG", "ARA", "ARB", "ARF",
+    "ARG", "ARL", "ASL", "AST", "ATP", "AVG", "BAH", "BEN", "BHP", "BKW",
+    "BMT", "BOA", "BOC", "BPT", "BRL", "BRN", "CAA", "CAG", "CAR", "CBA",
+    "CBL", "CCL", "CGL", "CGN", "CIM", "CIP", "CMC", "CNW", "COG", "COH",
+    "CRO", "CSL", "CSR", "CTO", "CTX", "CUE", "CVC", "CVN", "CWP", "DEV",
+    "DFM", "DJW", "DRA", "DUI", "EGD", "EGL", "ELT", "EML", "EMP", "EQT", 
+    "ERA", "ESE", "ESI", "FAR", "FGR", "FIG", "FLT", "FOR", "FXJ", "GBG", 
+    "GFY", "GMA", "GME", "GMN", "GPT", "GUD", "GUL", "HAR", "HGO", "HIL", 
+    "HLX", "HVN", "IAM", "ICT", "IFT", "IMD", "ING", "IPH", "IRC", "JRV", 
+    "KCN", "KGM", "KMT", "LKO", "LLC", "MAH", "MAT", "MAY", "MBK", "MCP",
+    "MDI", "MED", "MGC", "MGG", "MGL", "MLT", "MPL", "MRC", "MRV", "MTM",
+    "NAB", "NCM", "NCR", "NML", "NOR", "NTL", "OEC", "OML", "OSH", "PMC",
+    "PMP", "PNI", "POW", "PPK", "PPT", "PRL", "PSA", "QAN", "QBE", "RAC",
+    "RBL", "RCT", "REH", "RGS", "RIC", "RSG", "SAS", "SBM", "SCP", "SDG",
+    "SDI", "SGP", "SGR", "SHL", "SHV", "SMC", "SMI", "SMM", "SPX", "SRI",
+    "SRO", "STA", "STM", "STO", "SUR", "SYD", "TAH", "TAP", "TCL", "TGG",
+    "TRY", "VLT", "VRL", "WBA", "WBC", "WES", "WHF", "WMC", "WMI", "WOW",
+    "WPL", "WTP", "ZEL"};
+
+  std::vector<std::string> overlap(vec_init, vec_init+190);
   
   std::cout << "\t\t --- Overlapped Tickers --- " << std::endl;
 
   for (int i = 0; i < overlap.size(); i++)
-    std::cout << overlap[i] << std::endl;
+    std::cout << "\"" <<  overlap[i] << "\"" << ", ";
   std::cout << "Size of overlapped tickers: " << overlap.size() << std::endl;
   
+  // to preprocess financial_data.txt uncomment below line 
+//  preprocess_data(overlap);
+
   // temp share prices vector
   std::vector<std::vector<double> > share_prices;
-
   share_prices = share_prices_of_contiguous_tickers(overlap);
+
+  // Displaying ticker data
+  for (int i = 0; i < share_prices.size(); i++) {
+    std::cout << overlap[i] << ": ";
+    for (int j = 0; j < share_prices[i].size(); j++) {
+      std::cout << share_prices[i][j] << ", ";
+    }
+    std::cout << "\n\n\n\n\n\n\n" << "\t\t ------ NEW TICKER ------ \n";
+  }
   
   std::vector<std::vector<double> > percentage_qrtly;
-  int delta = 1;  
+  int delta = 5;  
   percentage_qrtly = to_percentage_change(delta, overlap, share_prices);
   print_to_kmeans(overlap, percentage_qrtly);
 
