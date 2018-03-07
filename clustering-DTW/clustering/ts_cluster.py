@@ -118,19 +118,68 @@ class ts_cluster(object):
         return np.sqrt(LB_sum)
 
 data = np.genfromtxt('kmeans_format.csv', delimiter = "\t")
+fout = open("to_json.json","w+")
+to_file = ""
+dict_ind_to_ticker = {'0': 'ABC', '1': 'AFI', '2': 'AMC', '3': 'AMP', '4': 'ANN', '5': 'ANZ', '6': 'ARG', '7': 'ASX', '8': 'BEN', '9': 'BHP', '10': 'BWP', '11': 'CAB', '12': 'CBA', '13': 'CCL', '14': 'COH', '15': 'CPU', '16': 'CTX', '17': 'DJW', '18': 'FLT', '19': 'FWD', '20': 'FXJ', '21': 'GUD', '22': 'HVN', '23': 'IAG', '24': 'IRE', '25': 'JHX', '26': 'MCR', '27': 'NCM', '28': 'ORI', '29': 'OSH', '30': 'PMC', '31': 'PPT', '32': 'QBE', '33': 'RHC', '34': 'RIC', '35': 'RIO', '36': 'RMD', '37': 'SGP', '38': 'SHL', '39': 'SOL', '40': 'STW', '41': 'TLS', '42': 'WBC', '43': 'WOW', '44': 'WPL'}
 
-cluster_DTW = ts_cluster(15);
+for i in range(2,21,2):
+    to_file += "{\n\t\"dtw\": true,\n\t\"num_clusters\": " + str(i) + ",\n\t\"clusters\": "
+    cluster_DTW = ts_cluster(i);
+    # data, num iteration, w
+    cluster_DTW.k_means_clust(data,10,50, False)
+        
+    #print(cluster_DTW.get_assignments())
+    assignment_dict = cluster_DTW.get_assignments(); 
+    to_file += "["
+    k = 1
+    for key in sorted(assignment_dict.keys()):
+        to_file += "["
+        n = 1
+        for item in assignment_dict[key]:
+            if type(item) == list:
+                y = 0
+             #   for val in item:
+             #       to_file += str(item)
+             #       if n != len(i) - 2:
+             #           to_file += ", "
+             #       y = y + 1
+            else:
+                to_file += "\"" + dict_ind_to_ticker[str(item)] + "\""
+                if n != len(assignment_dict[key]):
+                    to_file += ", "
+                n = n + 1
+        to_file += "]"
+        if k != len(assignment_dict):
+            to_file += ", "
+        k = k + 1
+        print(assignment_dict[key])
+    to_file += "],"
+    to_file += "\n\t\"centroid_values\": "
+    to_file += "["
+    t = 1
+    for list_outter in cluster_DTW.get_centroids():
+        to_file += "["
+        m = 0
+        for item in list_outter:
+            to_file += str(item)
+            if m != len(list_outter) - 1:
+                to_file += ','
+            m = m + 1
+        to_file += "]"
+        if t != len(cluster_DTW.get_centroids()):
+            to_file += ","
+        t = t + 1
+    to_file += "]"
+    to_file += "\n},"
 
-cluster_DTW.k_means_clust(data,10,50, False)
+fout.write(to_file)
+        
+#print(cluster_DTW.get_centroids())
+#for i in cluster_DTW.centroids:
+#    plt.plot(i)
+#for i in cluster_DTW.assignments.values():
+#    for j in i:
+#        print(str(j))
+#    print()
 
-for i in cluster_DTW.centroids:
-    plt.plot(i)
-
-print(cluster_DTW.get_assignments())
-
-for i in cluster_DTW.assignments.values():
-    for j in i:
-        print(str(j))
-    print()
-
-plt.show()
+#plt.show()
