@@ -158,19 +158,15 @@ std::vector<std::vector<double> > to_percentage_change(int delta_time,
 }
 
 void print_to_kmeans(std::vector<std::string> tickers,
-    std::vector<std::vector<double> > values_to_print) {
+    std::vector<std::vector<double> > values_to_print, bool DTW) {
 
   std::ofstream outFile;
-  outFile.open("kmeans_format.txt");
+  outFile.open("kmeans_format.csv");
 
   int data_points = 0;
   int attributes = 0;
   int clusters = -1;
   int max_iterations = -1;
-
-//  for (int i = 0; i < tickers.size(); i++)
-//    for (int j = 0; j < 10; j++)
-//      values_to_print[i].push_back(j);
 
   int max = 0;
 
@@ -180,11 +176,15 @@ void print_to_kmeans(std::vector<std::string> tickers,
   for (int i = 0; i < tickers.size(); i++) {
     if (values_to_print[i].size() == max) {
       data_points++;
+      std::cout << tickers[i] << "\n";
       for (std::vector<double>::size_type j = 0; 
           j < values_to_print[i].size(); j++) {
-        outFile << values_to_print[i][j] << " ";
+        if( j != values_to_print[i].size() - 1) 
+          outFile << values_to_print[i][j] << "\t";
+        else outFile << values_to_print[i][j];
       }
-      outFile << tickers[i] << "\n";
+      if (DTW) outFile << "\n";
+      else outFile << tickers[i] << "\n";
     }
   }
   outFile.close();
@@ -227,11 +227,11 @@ int main() {
   std::cout << "\t\t --- Overlapped Tickers --- " << std::endl;
 
   for (int i = 0; i < overlap.size(); i++)
-    std::cout << "\"" <<  overlap[i] << "\"" << ", ";
+    std::cout << overlap[i] << "\n";
   std::cout << "Size of overlapped tickers: " << overlap.size() << std::endl;
   
   // to preprocess financial_data.txt uncomment below line 
-  preprocess_data(overlap);
+//  preprocess_data(overlap);
 
   // temp share prices vector
   std::vector<std::vector<double> > share_prices;
@@ -247,10 +247,15 @@ int main() {
   }
   
   std::vector<std::vector<double> > percentage_qrtly;
-  int delta = 30;  
+
+  // Int delta represents the time interval for determining percentage change
+  // in price. Adjust for cruder estimate for change, but more accurate 
+  // K-means modelling.
+
+  int delta = 7;  
   percentage_qrtly = to_percentage_change(delta, overlap, share_prices);
   std::cout << "percentage size: " << percentage_qrtly[1].size() << std::endl;
-  print_to_kmeans(overlap, percentage_qrtly);
+  print_to_kmeans(overlap, percentage_qrtly, true);
   std::cout << "Delta Time: " << delta;
 
   return 0;

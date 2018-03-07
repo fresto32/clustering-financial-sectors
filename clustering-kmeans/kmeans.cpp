@@ -12,13 +12,14 @@
 
 using namespace std;
 
+
 class Point
 {
 private:
 	int id_point, id_cluster;
-	vector<double> values;
-	int total_values;
 	string name;
+	int total_values;
+	vector<double> values;
 
 public:
 	Point(int id_point, vector<double>& values, string name = "")
@@ -188,6 +189,28 @@ public:
 		this->max_iterations = max_iterations;
 	}
 
+        int numClusters() {
+          return clusters.size();
+        }
+
+        int numMinPoints() {
+          int min = 999999;
+          for (int i = 0; i < clusters.size(); i++) {
+            if (clusters[i].getTotalPoints() < min)
+              min = clusters[i].getTotalPoints();
+          }
+          return min;
+        }
+
+        int numMaxPoints() {
+          int max = 0;
+          for (int i = 0; i < clusters.size(); i++) {
+            if (clusters[i].getTotalPoints() > max)
+              max = clusters[i].getTotalPoints();
+          }
+          return max;
+        }
+
 	void run(vector<Point> & points)
 	{
 		if(K > total_points)
@@ -278,19 +301,56 @@ public:
 				string point_name = clusters[i].getPoint(j).getName();
 
 				if(point_name != "")
-					cout << point_name;
+					cout << "\"" << point_name << "\", ";
 
-				cout << endl;
+				//cout << endl;
 			}
 
 			cout << "Cluster values: ";
 
 			for(int j = 0; j < total_values; j++)
-				cout << clusters[i].getCentralValue(j) << " ";
+				cout << clusters[i].getCentralValue(j) << ", ";
 
 			cout << "\n\n";
 		}
 	}
+
+        void print_to_file(std::ofstream &outFileForWebsite) {
+
+          outFileForWebsite << "{\n\t\"dtw\": false,\n\t\"num_clusters\": " <<
+            K << ",\n\t\"clusters\": [";
+	  for(int i = 0; i < K; i++)
+	  {
+	      int total_points_cluster =  clusters[i].getTotalPoints();
+              outFileForWebsite << "[";
+              int u = 0;
+	      for(int j = 0; j < total_points_cluster - 1; j++)
+	      {
+                outFileForWebsite << "\"" << 
+                  clusters[i].getPoint(j).getName() << "\", ";
+                u = j;
+	      }
+              outFileForWebsite << "\"" << 
+                clusters[i].getPoint(u).getName() << "\"]";
+              if (i != K - 1) outFileForWebsite << ",";
+          }
+          outFileForWebsite << "],";
+          
+          outFileForWebsite << "\n\t\"centroid_values\": [";
+          for(int i = 0; i < K; i++)
+          {
+            outFileForWebsite << "[";
+            int lm = 0;
+	    for(int j = 0; j < total_values-1; j++) { 
+		outFileForWebsite << clusters[i].getCentralValue(j) << ", ";
+                lm = j;
+            }
+	    outFileForWebsite << clusters[i].getCentralValue(lm) << "]";
+            if (i != K - 1) outFileForWebsite << ",";
+          }
+          outFileForWebsite << "]";
+          outFileForWebsite << "\n},";
+        }
 };
 
 int main(int argc, char *argv[])
@@ -298,43 +358,72 @@ int main(int argc, char *argv[])
 	srand (time(NULL));
 	int total_points, total_values, K, max_iterations, has_name;
 
+	//inFile >> total_points >> total_values >> K >> max_iterations 
+        //  >> has_name;
+        
+        std::ofstream outFileForWebsite;
+        outFileForWebsite.open("non_dtw.json");
+        outFileForWebsite << "[";
+
         std::ifstream inFile;
         inFile.open("kmeans_format.txt");
+
+        for (int i = 2; i < 21; i = i + 2) {
+        K = i; 
+        total_points = 45;
+        total_values = 126;
+        max_iterations = 4;
+        has_name = 1;
+    
+        inFile.clear();
+        inFile.seekg(0,inFile.beg);
         std::string x;
 
-	inFile >> total_points >> total_values >> K >> max_iterations 
-          >> has_name;
-
-	vector<Point> points;
-	string point_name;
-
-
-	for(int i = 0; i < total_points; i++)
-	{
-		vector<double> values;
-
-		for(int j = 0; j < total_values; j++)
-		{
-			double value;
-			inFile >> value;
-			values.push_back(value);
-		}
-
-		if(has_name)
-		{
-			inFile >> point_name;
-			Point p(i, values, point_name);
-			points.push_back(p);
-		}
-		else
-		{
-			Point p(i, values);
-			points.push_back(p);
-		}
-	}
-
-	KMeans kmeans(K, total_points, total_values, max_iterations);
-	kmeans.run(points);
+    	vector<Point> points;
+        points.clear();
+    	string point_name;
+    
+            
+    	for(int i = 0; i < total_points; i++)
+    	{
+    		vector<double> values;
+    
+    		for(int j = 0; j < total_values; j++)
+    		{
+    			double value;
+    			inFile >> value;
+    			values.push_back(value);
+    		}
+    
+    		if(has_name)
+    		{
+    			inFile >> point_name;
+    			Point p(i, values, point_name);
+    			points.push_back(p);
+    		}
+    		else
+    		{
+    			Point p(i, values);
+    			points.push_back(p);
+    		}
+    	}
+    
+    	KMeans kmeans(K, total_points, total_values, max_iterations);
+    	kmeans.run(points);
+            
+            std::cout << "Num Min / Max: " << kmeans.numMinPoints() << " " <<
+              kmeans.numMaxPoints();
+    
+           // while ((kmeans.numMinPoints() < 1) ||
+           //     (kmeans.numMaxPoints() > 26)) {
+           //   KMeans kmeans(K, total_points, total_values, max_iterations);
+           //   kmeans.run(points);
+           //   std::cout << "Num Min / Max: " << kmeans.numMinPoints() << " " <<
+           //   kmeans.numMaxPoints();
+           // }
+    
+            kmeans.print_to_file(outFileForWebsite);
+        }
 
 	return 0;
 }
