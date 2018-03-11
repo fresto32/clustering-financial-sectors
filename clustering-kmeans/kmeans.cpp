@@ -1,5 +1,5 @@
-// Implementation of the KMeans Algorithm
-// reference: http://mnemstudio.org/clustering-k-means-example-1.htm
+// Reference: http://mnemstudio.org/clustering-k-means-example-1.htm
+// Adapted from: https://github.com/marcoscastro/kmeans
 
 #include <iostream>
 #include <vector>
