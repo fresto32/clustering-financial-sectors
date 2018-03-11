@@ -1,3 +1,5 @@
+#Slightly adapted from: https://github.com/alexminnaar/time-series-classification-and-clustering
+
 import numpy as np
 import random
 import matplotlib.pylab as plt
